@@ -1,20 +1,13 @@
-from rest_framework.response import Response
-from rest_framework import status, generics
-from ..serializers.user import UserSerializer
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
+# from ..models.user import User
 
-class SignUp(generics.CreateAPIView):
-    # Override the authentication/permissions classes so this endpoint
-    # is not authenticated & we don't need any permissions to access it.
-    authentication_classes = ()
-    permission_classes = ()
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ('id', 'email', 'password')
+        extra_kwargs = { 'password': { 'write_only': True, 'min_length': 5 } }
     
-    def post(self, request):
-        # Create the user using the UserSerializer 
-        created_user = UserSerializer(data=request.data['user'])
-        # Check user is valid
-        if created_user.is_valid():
-            # Save the user and send back a response!
-            created_user.save()
-            return Response({ 'user': created_user.data }, status=status.HTTP_201_CREATED)
-        else:
-            return Response(created_user.errors, status=status.HTTP_400_BAD_REQUEST)
+        # This create method will be used for model creation
+    def create(self, validated_data):
+        return get_user_model().objects.create_user(**validated_data)
